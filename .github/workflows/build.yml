@@ -1,0 +1,35 @@
+name: Build app.asar
+
+on:
+  workflow_dispatch: # This adds a button so you can run it manually!
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js v20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+
+    - name: Pack base asar
+      run: |
+        npm i -g asar
+        # Changes the version text inside the app
+        sed -i -e "s/nightly/nightly-$(git rev-parse HEAD | cut -c 1-7)/" src/index.js
+        node scripts/strip.js
+        # Builds the actual file
+        npx asar pack src app.asar
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-asar-file
+        path: app.asar
+        retention-days: 7 # Keeps the file on GitHub for 7 days
